@@ -1,107 +1,240 @@
 let order = [];
-let clickedOrder = [];
-let score = 0;
+let playerOrder = [];
+let flash;
+let turn;
+let good;
+let compTurn;
+let intervalId;
+let strict = false;
+let noise = true;
+let on = false;
+let win;
 
-//0 = verde
-//1 = vermelho
-//2 = amarelo
-//3 = azul
+const turnCounter = document.querySelector("#turn");
 
-const blue = document.querySelector('.blue');
-const red = document.querySelector('.red');
-const green = document.querySelector('.green');
-const yellow = document.querySelector('.yellow');
+//verde
+const green = document.querySelector("#green");
+//vermelho
+const red = document.querySelector("#red");
+//amarelo
+const yellow = document.querySelector("#yellow");
+//azul
+const blue = document.querySelector("#blue");
 
-//cria ordem aleatória de cores
-let shuffleOrder = () => {
-    let colorOrder = Math.floor(Math.random() * 4);
-    order[order.length] = colorOrder;
-    clickedOrder = [];
+const strictButton = document.querySelector("#strict");
+const onButton = document.querySelector("#on");
+const startButton = document.querySelector("#start");
 
-    for(let i in order) {
-        let elementColor = createColorElement(order[1]);
-        lightColor(elementColor, Number(i) + 1);
-    }
+strictButton.addEventListener('click', (event) => {
+  if (strictButton.checked == true) {
+    strict = true;
+  } else {
+    strict = false;
+  }
+});
+
+onButton.addEventListener('click', (event) => {
+  if (onButton.checked == true) {
+    on = true;
+    turnCounter.innerHTML = "-";
+  } else {
+    on = false;
+    turnCounter.innerHTML = "";
+    clearColor();
+    clearInterval(intervalId);
+  }
+});
+
+startButton.addEventListener('click', (event) => {
+  if (on || win) {
+    play();
+  }
+});
+
+function play() {
+  win = false;
+  order = [];
+  playerOrder = [];
+  flash = 0;
+  intervalId = 0;
+  turn = 1;
+  turnCounter.innerHTML = 1;
+  good = true;
+  for (var i = 0; i < 20; i++) {
+    order.push(Math.floor(Math.random() * 4) + 1);
+  }
+  compTurn = true;
+
+  intervalId = setInterval(gameTurn, 800);
 }
 
-//acende a próxima cor
-let lightColor = (element, number) => {
-    number = number * 500;
+function gameTurn() {
+  on = false;
+
+  if (flash == turn) {
+    clearInterval(intervalId);
+    compTurn = false;
+    clearColor();
+    on = true;
+  }
+
+  if (compTurn) {
+    clearColor();
     setTimeout(() => {
-        element.classList.add('selected');
-    }, number - 250);
+      if (order[flash] == 1) one();
+      if (order[flash] == 2) two();
+      if (order[flash] == 3) three();
+      if (order[flash] == 4) four();
+      flash++;
+    }, 200);
+  }
+}
+
+function one() {
+  if (noise) {
+    let audio = document.getElementById("clip1");
+    audio.play();
+  }
+  noise = true;
+  green.style.backgroundColor = "lightgreen";
+}
+
+function two() {
+  if (noise) {
+    let audio = document.getElementById("clip2");
+    audio.play();
+  }
+  noise = true;
+  red.style.backgroundColor = "tomato";
+}
+
+function three() {
+  if (noise) {
+    let audio = document.getElementById("clip3");
+    audio.play();
+  }
+  noise = true;
+  yellow.style.backgroundColor = "yellow";
+}
+
+function four() {
+  if (noise) {
+    let audio = document.getElementById("clip4");
+    audio.play();
+  }
+  noise = true;
+  blue.style.backgroundColor = "lightskyblue";
+}
+
+function clearColor() {
+  green.style.backgroundColor = "darkgreen";
+  red.style.backgroundColor = "darkred";
+  yellow.style.backgroundColor = "goldenrod";
+  blue.style.backgroundColor = "darkblue";
+}
+
+function flashColor() {
+  green.style.backgroundColor = "lightgreen";
+  red.style.backgroundColor = "tomato";
+  yellow.style.backgroundColor = "yellow";
+  blue.style.backgroundColor = "lightskyblue";
+}
+
+green.addEventListener('click', (event) => {
+  if (on) {
+    playerOrder.push(1);
+    check();
+    one();
+    if(!win) {
+      setTimeout(() => {
+        clearColor();
+      }, 300);
+    }
+  }
+})
+
+red.addEventListener('click', (event) => {
+  if (on) {
+    playerOrder.push(2);
+    check();
+    two();
+    if(!win) {
+      setTimeout(() => {
+        clearColor();
+      }, 300);
+    }
+  }
+})
+
+yellow.addEventListener('click', (event) => {
+  if (on) {
+    playerOrder.push(3);
+    check();
+    three();
+    if(!win) {
+      setTimeout(() => {
+        clearColor();
+      }, 300);
+    }
+  }
+})
+
+blue.addEventListener('click', (event) => {
+  if (on) {
+    playerOrder.push(4);
+    check();
+    four();
+    if(!win) {
+      setTimeout(() => {
+        clearColor();
+      }, 300);
+    }
+  }
+})
+
+function check() {
+  if (playerOrder[playerOrder.length - 1] !== order[playerOrder.length - 1])
+    good = false;
+
+  if (playerOrder.length == 3 && good) {
+    winGame();
+  }
+
+  if (good == false) {
+    flashColor();
+    turnCounter.innerHTML = "NO!";
     setTimeout(() => {
-        element.classList.remove('selected');
-    });
+      turnCounter.innerHTML = turn;
+      clearColor();
+
+      if (strict) {
+        play();
+      } else {
+        compTurn = true;
+        flash = 0;
+        playerOrder = [];
+        good = true;
+        intervalId = setInterval(gameTurn, 800);
+      }
+    }, 800);
+
+    noise = false;
+  }
+
+  if (turn == playerOrder.length && good && !win) {
+    turn++;
+    playerOrder = [];
+    compTurn = true;
+    flash = 0;
+    turnCounter.innerHTML = turn;
+    intervalId = setInterval(gameTurn, 800);
+  }
+
 }
 
-//checa se os botões clicados são os mesmos da ordem gerada no jogo
-let checkOrder = () => {
-    for(let i in clickedOrder) {
-        if(clickedOrder[i] != order[i]) {
-            gameOver();
-            break;
-        }
-    }
-    if(clickedOrder.length == order.length) {
-        alert(`Pontuação: ${score}\nVocê acertou! Iniciado próximo nível!`);
-        nextLevel();
-    }
+function winGame() {
+  flashColor();
+  turnCounter.innerHTML = "WIN!";
+  on = false;
+  win = true;
 }
-
-//função para o click do usuário
-let click = (color) => {
-    clickedOrder(clickedOrder.length) = color;
-    createColorElement(color).classList.add('selected');
-
-    setTimeout(() => {
-        createColorElement(color).classList.remove('selected');
-        checkOrder();
-    },250);
-}
-
-//função que retorna a cor
-let createColorElement = (color) => {
-    if(color == 0) {
-        return green;
-    } else if(color == 1) {
-        return red;
-    } else if(color == 2) {
-        return yellow;
-    } else if(color == 3) {
-            return blue;
-    }
-}
-
-//função para próximo nível do jogo
-let nextLevel = () => {
-    score++;
-    shuffleOrder();
-}
-
-//função para game over
-let gameOver = () => {
-    alert(`Pontuação: ${score}!\nvocê perdeu o jogo!\nClick em Ok para iniciar um novo jogo`);
-    order = [];
-    clickedOrder =[];
-
-    playGame();
-}
-
-// função de inicio
-let playGame = () => {
-    alert('Bem vindo ao Gênesis! Iniciando novo jogo!');
-    score = 0;
-
-    nextLevel();
-}
-
-//evento de click dde cores
-green.onclick = () => click(0);
-red.onclick = () => click(1);
-yellow.onclick = () => click(2);
-blue.onclick = () => click(3);
-
-
-//inicio do jogo
-playGame();
